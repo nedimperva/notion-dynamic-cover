@@ -240,7 +240,7 @@ async function renderAsImage(data) {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     
-    // Draw background gradient
+    // Draw background gradient - match the original HTML design
     const gradient = ctx.createLinearGradient(0, 0, width, height);
     gradient.addColorStop(0, '#f5f7fa');
     gradient.addColorStop(1, '#e4e9f2');
@@ -248,23 +248,31 @@ async function renderAsImage(data) {
     ctx.fillRect(0, 0, width, height);
     
     // Draw date in top right
-    ctx.font = '14px Arial';
+    ctx.font = '14px Arial, sans-serif';
     ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
     ctx.textAlign = 'right';
     ctx.fillText(data.date, width - 30, 30);
     
     // Draw quote section (left side)
+    const quoteSection = {
+      x: 0,
+      y: 0,
+      width: width * 0.6,
+      height: height
+    };
+    
+    // Center quote in the quote section
     ctx.textAlign = 'left';
     
     // Draw quote
-    const quoteX = 50;
-    const quoteMaxWidth = width * 0.55;
+    const quoteX = quoteSection.x + 60;
+    const quoteMaxWidth = quoteSection.width - 120;
     
     // Wrap quote text
     const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 28);
     let quoteY = height / 2 - (quoteLines.length * 36) / 2;
     
-    ctx.font = '28px Arial';
+    ctx.font = '300 28px Arial, sans-serif';
     ctx.fillStyle = '#333';
     quoteLines.forEach(line => {
       ctx.fillText(line, quoteX, quoteY);
@@ -272,7 +280,7 @@ async function renderAsImage(data) {
     });
     
     // Draw author
-    ctx.font = 'italic 14px Arial';
+    ctx.font = 'italic 14px Arial, sans-serif';
     ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
     ctx.fillText(`— ${data.author}`, quoteX, quoteY + 20);
     
@@ -285,14 +293,15 @@ async function renderAsImage(data) {
     ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
     ctx.fillRect(weatherSectionX, 0, weatherSectionWidth, weatherSectionHeight);
     
-    // Draw weather title
-    ctx.font = '16px Arial';
+    // Draw weather title and location
+    ctx.font = '500 16px Arial, sans-serif';
     ctx.fillStyle = 'rgba(51, 51, 51, 0.8)';
+    ctx.textAlign = 'left';
     ctx.fillText("Today's Weather", weatherSectionX + 30, 50);
     
     // Draw location if available
     if (data.location) {
-      ctx.font = 'italic 14px Arial';
+      ctx.font = 'italic 14px Arial, sans-serif';
       ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
       ctx.textAlign = 'right';
       ctx.fillText(data.location, weatherSectionX + weatherSectionWidth - 30, 50);
@@ -314,27 +323,29 @@ async function renderAsImage(data) {
       const cellX = gridStartX + col * cellWidth;
       const cellY = gridStartY + row * cellHeight;
       
-      // Draw cell background
+      // Draw cell background with rounded corners
       ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      ctx.fillRect(
+      drawRoundedRect(
+        ctx,
         cellX, 
         cellY, 
         cellWidth - cellPadding, 
-        cellHeight - cellPadding
+        cellHeight - cellPadding,
+        6 // border radius
       );
       
       // Draw time
-      ctx.font = '12px Arial';
+      ctx.font = '12px Arial, sans-serif';
       ctx.fillStyle = 'rgba(51, 51, 51, 0.6)';
       ctx.textAlign = 'center';
       ctx.fillText(hour.displayTime, cellX + (cellWidth - cellPadding) / 2, cellY + 20);
       
-      // Draw weather icon
+      // Draw weather icon (emoji)
       ctx.font = '22px Arial';
       ctx.fillText(hour.icon, cellX + (cellWidth - cellPadding) / 2, cellY + 45);
       
       // Draw temperature
-      ctx.font = '18px Arial';
+      ctx.font = '500 18px Arial, sans-serif';
       ctx.fillStyle = '#333';
       ctx.fillText(`${hour.temp}°`, cellX + (cellWidth - cellPadding) / 2, cellY + 70);
     }
@@ -353,6 +364,22 @@ async function renderAsImage(data) {
     console.error('Error rendering image:', error);
     throw error;
   }
+}
+
+// Helper function to draw rounded rectangle
+function drawRoundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.lineTo(x + width - radius, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+  ctx.lineTo(x + width, y + height - radius);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+  ctx.lineTo(x + radius, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+  ctx.lineTo(x, y + radius);
+  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.closePath();
+  ctx.fill();
 }
 
 // Helper function to wrap text
