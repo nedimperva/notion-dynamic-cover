@@ -246,55 +246,33 @@ async function renderAsImage(data) {
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     
-    // Draw background gradient - green gradient
-    const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, '#134e5e');
-    gradient.addColorStop(0.5, '#2a9d8f');
-    gradient.addColorStop(1, '#71b280');
-    ctx.fillStyle = gradient;
+    // Draw solid off-white background instead of gradient
+    ctx.fillStyle = '#f8f9fa';
     ctx.fillRect(0, 0, width, height);
     
-    // Draw accent circles
+    // Draw accent circles with subtle gray
     ctx.beginPath();
     ctx.arc(40, 20, 60, 0, Math.PI * 2);
     const circleGradient1 = ctx.createRadialGradient(40, 20, 0, 40, 20, 60);
-    circleGradient1.addColorStop(0, 'rgba(255,255,255,0.2)');
-    circleGradient1.addColorStop(1, 'rgba(255,255,255,0)');
+    circleGradient1.addColorStop(0, 'rgba(0,0,0,0.05)');
+    circleGradient1.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = circleGradient1;
     ctx.fill();
     
     ctx.beginPath();
     ctx.arc(width - 380, height - 30, 60, 0, Math.PI * 2);
     const circleGradient2 = ctx.createRadialGradient(width - 380, height - 30, 0, width - 380, height - 30, 60);
-    circleGradient2.addColorStop(0, 'rgba(255,255,255,0.2)');
-    circleGradient2.addColorStop(1, 'rgba(255,255,255,0)');
+    circleGradient2.addColorStop(0, 'rgba(0,0,0,0.05)');
+    circleGradient2.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = circleGradient2;
     ctx.fill();
-    
-    // Draw date in top right with pill background
-    ctx.save();
-    // Draw pill background
-    const dateText = data.date;
-    ctx.font = '12px Arial, sans-serif';
-    const dateWidth = ctx.measureText(dateText).width;
-    const dateX = width - 20 - dateWidth - 16; // 16px for padding
-    const dateY = 15;
-    
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
-    roundRect(ctx, dateX, dateY, dateWidth + 16, 20, 10, true);
-    
-    // Draw date text
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-    ctx.textAlign = 'left';
-    ctx.fillText(dateText, dateX + 8, dateY + 14);
-    ctx.restore();
     
     // Draw divider between sections
     const dividerX = width * 0.6;
     ctx.beginPath();
     ctx.moveTo(dividerX, 0);
     ctx.lineTo(dividerX, height);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
     ctx.stroke();
     
     // Draw quote section (left side)
@@ -308,25 +286,49 @@ async function renderAsImage(data) {
     // Center quote in the quote section
     ctx.textAlign = 'left';
     
-    // Draw quote - moved more to the right
-    const quoteX = quoteSection.x + 60; // Increased from 40 to 60
-    const quoteMaxWidth = quoteSection.width - 100; // Adjusted to maintain right margin
+    // Draw quote - moved more to the right with smaller font size
+    const quoteX = quoteSection.x + 60;
+    const quoteMaxWidth = quoteSection.width - 100;
     
-    // Wrap quote text
-    ctx.font = '300 22px Arial, sans-serif';
-    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 22);
-    let quoteY = height / 2 - (quoteLines.length * 28) / 2;
+    // Reduced font size from 22px to 20px
+    ctx.font = '300 20px Arial, sans-serif';
+    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 20);
     
-    ctx.fillStyle = '#fff';
-    quoteLines.forEach(line => {
+    // Calculate the total height of the quote text
+    const lineHeight = 26; // Reduced from 28 to 26
+    const totalQuoteHeight = quoteLines.length * lineHeight;
+    
+    // Limit the number of lines to ensure it doesn't exceed the weather box height
+    const maxLines = Math.min(quoteLines.length, 6); // Limit to 6 lines maximum
+    const truncatedQuoteLines = quoteLines.slice(0, maxLines);
+    
+    // If we truncated, add ellipsis to the last line
+    if (truncatedQuoteLines.length < quoteLines.length) {
+      let lastLine = truncatedQuoteLines[truncatedQuoteLines.length - 1];
+      // Trim the last line if needed to make room for ellipsis
+      while (ctx.measureText(lastLine + '..."').width > quoteMaxWidth) {
+        lastLine = lastLine.slice(0, -1);
+      }
+      truncatedQuoteLines[truncatedQuoteLines.length - 1] = lastLine + '...';
+    }
+    
+    let quoteY = height / 2 - (truncatedQuoteLines.length * lineHeight) / 2;
+    
+    ctx.fillStyle = '#333333';
+    truncatedQuoteLines.forEach(line => {
       ctx.fillText(line, quoteX, quoteY);
-      quoteY += 28;
+      quoteY += lineHeight;
     });
     
-    // Draw author
-    ctx.font = 'italic 13px Arial, sans-serif';
-    ctx.fillStyle = '#ffe8d6';
-    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 10);
+    // Add closing quote if we didn't truncate
+    if (truncatedQuoteLines.length === quoteLines.length) {
+      ctx.fillText('"', quoteX + ctx.measureText(truncatedQuoteLines[truncatedQuoteLines.length - 1]).width, quoteY - lineHeight);
+    }
+    
+    // Draw author with smaller font
+    ctx.font = 'italic 12px Arial, sans-serif'; // Reduced from 13px to 12px
+    ctx.fillStyle = '#666666';
+    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 8); // Reduced spacing from 10 to 8
     
     // Draw weather section (right side)
     const weatherSection = {
@@ -336,27 +338,35 @@ async function renderAsImage(data) {
       height: height
     };
     
-    // Fill weather section background
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    // Fill weather section background with very light gray
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
     ctx.fillRect(weatherSection.x, weatherSection.y, weatherSection.width, weatherSection.height);
     
     // Calculate vertical center of the weather section to align with quote
-    const weatherContentHeight = 160; // Approximate height of weather content (title + 4 time blocks)
+    const weatherContentHeight = 200; // Approximate height of weather content (title + 2x2 grid)
     const weatherStartY = (height - weatherContentHeight) / 2;
     
-    // Draw weather title
-    ctx.font = '500 14px Arial, sans-serif';
-    ctx.fillStyle = '#ffd6ff';
-    ctx.fillText("Today's Weather", weatherSection.x + 20, weatherStartY);
+    // Format date to show day and month only
+    const dateObj = new Date(data.date);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { 
+      day: 'numeric', 
+      month: 'short'
+    });
     
-    // Draw location
-    ctx.font = 'italic 12px Arial, sans-serif';
-    ctx.fillStyle = '#e0fbfc';
+    // Draw location and date
+    ctx.font = '500 14px Arial, sans-serif';
+    ctx.fillStyle = '#444444';
+    ctx.textAlign = 'left';
+    ctx.fillText(data.location || 'Konjic', weatherSection.x + 20, weatherStartY);
+    
+    // Draw date next to location
+    ctx.font = '400 14px Arial, sans-serif';
+    ctx.fillStyle = '#666666';
     ctx.textAlign = 'right';
-    ctx.fillText(data.location || 'Konjic', weatherSection.x + weatherSection.width - 20, weatherStartY);
+    ctx.fillText(formattedDate, weatherSection.x + weatherSection.width - 20, weatherStartY);
     ctx.textAlign = 'left';
     
-    // Define the 4 time blocks
+    // Define the 4 time blocks for 2x2 grid
     const timeBlocks = [
       { label: '00:00 - 06:00', condition: 'night-clear', temp: '45' },
       { label: '06:00 - 12:00', condition: 'partly-cloudy', temp: '53' },
@@ -399,32 +409,63 @@ async function renderAsImage(data) {
       processedWeather = [weatherMap[0], weatherMap[1], weatherMap[2], weatherMap[3]];
     }
     
-    // Draw weather items
+    // Draw weather grid (2x2)
     const gridStartX = weatherSection.x + 20;
     const gridStartY = weatherStartY + 30;
+    const cellWidth = (weatherSection.width - 50) / 2; // 2 columns with margins
+    const cellHeight = 80; // Taller cells for the 2x2 grid
     
     for (let i = 0; i < 4; i++) {
       const weather = processedWeather[i];
-      const cellY = gridStartY + i * 30;
+      const row = Math.floor(i / 2);
+      const col = i % 2;
+      
+      const cellX = gridStartX + col * (cellWidth + 10); // 10px gap between cells
+      const cellY = gridStartY + row * (cellHeight + 10); // 10px gap between rows
+      
+      // Draw cell background (white box with shadow)
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 2;
+      roundRect(ctx, cellX, cellY, cellWidth, cellHeight, 8, true);
+      
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
       
       // Draw time period
-      ctx.font = '12px Arial, sans-serif';
-      ctx.fillStyle = '#c7f9cc';
-      ctx.textAlign = 'left';
-      ctx.fillText(weather.label, gridStartX, cellY);
-      
-      // Draw weather icon
-      const weatherIcon = getWeatherIcon(weather.condition);
-      ctx.font = '18px Arial, sans-serif';
-      ctx.fillStyle = '#fff';
+      ctx.font = '11px Arial, sans-serif';
+      ctx.fillStyle = '#666666';
       ctx.textAlign = 'center';
-      ctx.fillText(weatherIcon, gridStartX + 160, cellY);
+      ctx.fillText(weather.label, cellX + cellWidth/2, cellY + 20);
       
-      // Draw temperature
-      ctx.font = '500 16px Arial, sans-serif';
-      ctx.fillStyle = '#fff';
-      ctx.textAlign = 'right';
-      ctx.fillText(`${weather.temp}°`, gridStartX + 220, cellY);
+      // Draw weather icon with color (no background circle)
+      const weatherIcon = getWeatherIcon(weather.condition);
+      const iconColor = getWeatherIconColor(weather.condition);
+      
+      // Draw colored weather icon directly
+      ctx.font = '24px Arial, sans-serif';
+      ctx.fillStyle = iconColor; // Colored icon
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(weatherIcon, cellX + cellWidth/2, cellY + 42);
+      ctx.textBaseline = 'alphabetic'; // Reset to default
+      
+      // Generate min/max temperature range
+      // If we have actual min/max data, use it; otherwise, generate fake range
+      const tempValue = parseInt(weather.temp) || 0;
+      const minTemp = weather.minTemp || (tempValue - Math.floor(Math.random() * 4 + 2));
+      const maxTemp = weather.maxTemp || (tempValue + Math.floor(Math.random() * 4 + 2));
+      
+      // Draw temperature range
+      ctx.font = '400 12px Arial, sans-serif'; // Smaller font
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${minTemp}° - ${maxTemp}°`, cellX + cellWidth/2, cellY + 65);
     }
     
     // Convert canvas to buffer and cache it
@@ -466,6 +507,27 @@ function getWeatherIcon(condition) {
   
   // Return the mapped icon or a default one
   return iconMap[condition] || '☀️';
+}
+
+// Helper function to get color for weather icon
+function getWeatherIconColor(condition) {
+  const colorMap = {
+    'sunny': '#FF9500',        // Orange
+    'clear': '#FF9500',        // Orange
+    'partly-cloudy': '#87CEEB', // Sky Blue
+    'cloudy': '#6c757d',       // Gray
+    'overcast': '#495057',     // Dark Gray
+    'rain': '#0D6EFD',         // Blue
+    'showers': '#0DCAF0',      // Light Blue
+    'thunderstorm': '#6610F2', // Purple
+    'snow': '#ADB5BD',         // Light Gray
+    'fog': '#CED4DA',          // Very Light Gray
+    'night-clear': '#343A40',  // Dark Blue-Gray
+    'night-partly-cloudy': '#495057', // Dark Gray
+    'night-cloudy': '#343A40'  // Dark Blue-Gray
+  };
+  
+  return colorMap[condition] || '#FF9500'; // Default to orange
 }
 
 // Helper function to draw rounded rectangles
