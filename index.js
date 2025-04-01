@@ -291,7 +291,7 @@ async function renderAsImage(data) {
     const quoteMaxWidth = quoteSection.width - 100;
     
     // Reduced font size from 22px to 20px
-    ctx.font = '300 20px Arial, sans-serif';
+    ctx.font = '200 14px Arial, sans-serif';
     const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 20);
     
     // Calculate the total height of the quote text
@@ -409,11 +409,11 @@ async function renderAsImage(data) {
       processedWeather = [weatherMap[0], weatherMap[1], weatherMap[2], weatherMap[3]];
     }
     
-    // Draw weather grid (2x2)
-    const gridStartX = weatherSection.x + 20;
+    // Draw weather grid (2x2) - smaller size
+    const gridStartX = weatherSection.x + 25; // Moved slightly right
     const gridStartY = weatherStartY + 30;
-    const cellWidth = (weatherSection.width - 50) / 2; // 2 columns with margins
-    const cellHeight = 80; // Taller cells for the 2x2 grid
+    const cellWidth = (weatherSection.width - 60) / 2; // Smaller cells, 2 columns with margins
+    const cellHeight = 70; // Shorter cells for the 2x2 grid
     
     for (let i = 0; i < 4; i++) {
       const weather = processedWeather[i];
@@ -426,10 +426,10 @@ async function renderAsImage(data) {
       // Draw cell background (white box with shadow)
       ctx.fillStyle = '#ffffff';
       ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
-      ctx.shadowBlur = 8;
+      ctx.shadowBlur = 6; // Reduced shadow blur
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 2;
-      roundRect(ctx, cellX, cellY, cellWidth, cellHeight, 8, true);
+      roundRect(ctx, cellX, cellY, cellWidth, cellHeight, 6, true); // Smaller corner radius
       
       // Reset shadow
       ctx.shadowColor = 'transparent';
@@ -437,22 +437,22 @@ async function renderAsImage(data) {
       ctx.shadowOffsetX = 0;
       ctx.shadowOffsetY = 0;
       
-      // Draw time period
-      ctx.font = '11px Arial, sans-serif';
+      // Draw time period - smaller text
+      ctx.font = '10px Arial, sans-serif'; // Reduced from 11px to 10px
       ctx.fillStyle = '#666666';
       ctx.textAlign = 'center';
-      ctx.fillText(weather.label, cellX + cellWidth/2, cellY + 20);
+      ctx.fillText(weather.label, cellX + cellWidth/2, cellY + 16); // Moved up slightly
       
       // Draw weather icon with color (no background circle)
       const weatherIcon = getWeatherIcon(weather.condition);
       const iconColor = getWeatherIconColor(weather.condition);
       
       // Draw colored weather icon directly
-      ctx.font = '24px Arial, sans-serif';
+      ctx.font = '22px sans-serif'; // Changed from Arial to sans-serif for better emoji support
       ctx.fillStyle = iconColor; // Colored icon
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
-      ctx.fillText(weatherIcon, cellX + cellWidth/2, cellY + 42);
+      ctx.fillText(weatherIcon, cellX + cellWidth/2, cellY + 38); // Moved up slightly
       ctx.textBaseline = 'alphabetic'; // Reset to default
       
       // Generate min/max temperature range
@@ -461,11 +461,11 @@ async function renderAsImage(data) {
       const minTemp = weather.minTemp || (tempValue - Math.floor(Math.random() * 4 + 2));
       const maxTemp = weather.maxTemp || (tempValue + Math.floor(Math.random() * 4 + 2));
       
-      // Draw temperature range
-      ctx.font = '400 12px Arial, sans-serif'; // Smaller font
+      // Draw temperature range - smaller text
+      ctx.font = '400 10px Arial, sans-serif'; // Reduced from 12px to 10px
       ctx.fillStyle = '#333333';
       ctx.textAlign = 'center';
-      ctx.fillText(`${minTemp}° - ${maxTemp}°`, cellX + cellWidth/2, cellY + 65);
+      ctx.fillText(`${minTemp}° - ${maxTemp}°`, cellX + cellWidth/2, cellY + 58); // Moved up slightly
     }
     
     // Convert canvas to buffer and cache it
@@ -485,19 +485,19 @@ async function renderAsImage(data) {
 // Helper function to convert weather condition to text representation
 function getWeatherIcon(condition) {
   const iconMap = {
-    'sunny': '☀️',
-    'clear': '☀️',
+    'sunny': '☀',
+    'clear': '☀',
     'partly-cloudy': '⛅',
-    'cloudy': '☁️',
-    'overcast': '☁️',
-    'rain': '🌧️',
-    'showers': '🌦️',
-    'thunderstorm': '⛈️',
-    'snow': '❄️',
-    'fog': '🌫️',
+    'cloudy': '☁',
+    'overcast': '☁',
+    'rain': '🌧',
+    'showers': '🌦',
+    'thunderstorm': '⛈',
+    'snow': '❄',
+    'fog': '🌫',
     'night-clear': '🌙',
     'night-partly-cloudy': '🌙',
-    'night-cloudy': '☁️'
+    'night-cloudy': '☁'
   };
   
   // If condition is already an emoji, return it
@@ -506,7 +506,7 @@ function getWeatherIcon(condition) {
   }
   
   // Return the mapped icon or a default one
-  return iconMap[condition] || '☀️';
+  return iconMap[condition] || '☀';
 }
 
 // Helper function to get color for weather icon
