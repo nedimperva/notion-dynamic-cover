@@ -240,24 +240,62 @@ async function renderAsImage(data) {
   console.log('Rendering new image...');
   
   try {
-    // Create canvas with Notion cover dimensions
-    const width = 1500;
-    const height = 600;
+    // Create canvas with compact Notion cover dimensions
+    const width = 1000;
+    const height = 420;
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     
-    // Draw background gradient - match the original HTML design
+    // Draw background gradient - green gradient
     const gradient = ctx.createLinearGradient(0, 0, width, height);
-    gradient.addColorStop(0, '#f5f7fa');
-    gradient.addColorStop(1, '#e4e9f2');
+    gradient.addColorStop(0, '#134e5e');
+    gradient.addColorStop(0.5, '#2a9d8f');
+    gradient.addColorStop(1, '#71b280');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     
-    // Draw date in top right
-    ctx.font = '14px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
-    ctx.textAlign = 'right';
-    ctx.fillText(data.date, width - 30, 30);
+    // Draw accent circles
+    ctx.beginPath();
+    ctx.arc(40, 20, 60, 0, Math.PI * 2);
+    const circleGradient1 = ctx.createRadialGradient(40, 20, 0, 40, 20, 60);
+    circleGradient1.addColorStop(0, 'rgba(255,255,255,0.2)');
+    circleGradient1.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = circleGradient1;
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(width - 380, height - 30, 60, 0, Math.PI * 2);
+    const circleGradient2 = ctx.createRadialGradient(width - 380, height - 30, 0, width - 380, height - 30, 60);
+    circleGradient2.addColorStop(0, 'rgba(255,255,255,0.2)');
+    circleGradient2.addColorStop(1, 'rgba(255,255,255,0)');
+    ctx.fillStyle = circleGradient2;
+    ctx.fill();
+    
+    // Draw date in top right with pill background
+    ctx.save();
+    // Draw pill background
+    const dateText = data.date;
+    ctx.font = '12px Arial, sans-serif';
+    const dateWidth = ctx.measureText(dateText).width;
+    const dateX = width - 20 - dateWidth - 16; // 16px for padding
+    const dateY = 15;
+    
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+    roundRect(ctx, dateX, dateY, dateWidth + 16, 20, 10, true);
+    
+    // Draw date text
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
+    ctx.textAlign = 'left';
+    ctx.fillText(dateText, dateX + 8, dateY + 14);
+    ctx.restore();
+    
+    // Draw divider between sections
+    const dividerX = width * 0.6;
+    ctx.beginPath();
+    ctx.moveTo(dividerX, 0);
+    ctx.lineTo(dividerX, height);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.stroke();
     
     // Draw quote section (left side)
     const quoteSection = {
@@ -271,97 +309,139 @@ async function renderAsImage(data) {
     ctx.textAlign = 'left';
     
     // Draw quote
-    const quoteX = quoteSection.x + 60;
-    const quoteMaxWidth = quoteSection.width - 120;
+    const quoteX = quoteSection.x + 40;
+    const quoteMaxWidth = quoteSection.width - 80;
     
     // Wrap quote text
-    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 28);
-    let quoteY = height / 2 - (quoteLines.length * 36) / 2;
+    ctx.font = '300 22px Arial, sans-serif';
+    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 22);
+    let quoteY = height / 2 - (quoteLines.length * 28) / 2;
     
-    ctx.font = '300 28px Arial, sans-serif';
-    ctx.fillStyle = '#333';
+    ctx.fillStyle = '#fff';
     quoteLines.forEach(line => {
       ctx.fillText(line, quoteX, quoteY);
-      quoteY += 36;
+      quoteY += 28;
     });
     
     // Draw author
-    ctx.font = 'italic 14px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
-    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 20);
+    ctx.font = 'italic 13px Arial, sans-serif';
+    ctx.fillStyle = '#ffe8d6';
+    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 10);
     
     // Draw weather section (right side)
-    const weatherSectionX = width * 0.6;
-    const weatherSectionWidth = width * 0.4;
-    const weatherSectionHeight = height;
+    const weatherSection = {
+      x: width * 0.6,
+      y: 0,
+      width: width * 0.4,
+      height: height
+    };
     
-    // Draw weather section background
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.fillRect(weatherSectionX, 0, weatherSectionWidth, weatherSectionHeight);
+    // Fill weather section background
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    ctx.fillRect(weatherSection.x, weatherSection.y, weatherSection.width, weatherSection.height);
     
-    // Draw weather title and location
-    ctx.font = '500 16px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(51, 51, 51, 0.8)';
+    // Calculate vertical center of the weather section to align with quote
+    const weatherContentHeight = 180; // Approximate height of weather content (title + 2 rows)
+    const weatherStartY = (height - weatherContentHeight) / 2;
+    
+    // Draw weather title
+    ctx.font = '500 14px Arial, sans-serif';
+    ctx.fillStyle = '#ffd6ff';
+    ctx.fillText("Today's Weather", weatherSection.x + 20, weatherStartY);
+    
+    // Draw location
+    ctx.font = 'italic 12px Arial, sans-serif';
+    ctx.fillStyle = '#e0fbfc';
+    ctx.textAlign = 'right';
+    ctx.fillText(data.location || 'Konjic', weatherSection.x + weatherSection.width - 20, weatherStartY);
     ctx.textAlign = 'left';
-    ctx.fillText("Today's Weather", weatherSectionX + 30, 50);
-    
-    // Draw location if available
-    if (data.location) {
-      ctx.font = 'italic 14px Arial, sans-serif';
-      ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
-      ctx.textAlign = 'right';
-      ctx.fillText(data.location, weatherSectionX + weatherSectionWidth - 30, 50);
-      ctx.textAlign = 'left';
-    }
     
     // Draw weather grid
-    const gridStartX = weatherSectionX + 30;
-    const gridStartY = 80;
-    const cellWidth = (weatherSectionWidth - 60) / 4;
-    const cellHeight = 80;
-    const cellPadding = 6;
-    
-    // Draw weather hours
-    for (let i = 0; i < Math.min(data.weather.length, 8); i++) {
-      const hour = data.weather[i];
-      const row = Math.floor(i / 4);
-      const col = i % 4;
-      const cellX = gridStartX + col * cellWidth;
-      const cellY = gridStartY + row * cellHeight;
+    if (data.weather && data.weather.length > 0) {
+      const gridStartX = weatherSection.x + 20;
+      const gridStartY = weatherStartY + 20;
+      const cellWidth = (weatherSection.width - 40) / 4;
+      const cellHeight = 70;
+      const cellPadding = 4;
       
-      // Draw cell background with rounded corners
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      drawRoundedRect(
-        ctx,
-        cellX, 
-        cellY, 
-        cellWidth - cellPadding, 
-        cellHeight - cellPadding,
-        6 // border radius
-      );
+      for (let i = 0; i < Math.min(data.weather.length, 8); i++) {
+        const weather = data.weather[i];
+        const row = Math.floor(i / 4);
+        const col = i % 4;
+        
+        const cellX = gridStartX + col * cellWidth;
+        const cellY = gridStartY + row * cellHeight;
+        
+        // Draw cell background
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        roundRect(ctx, cellX, cellY, cellWidth - 8, cellHeight - 8, 6, true);
+        
+        // Draw time
+        ctx.font = '11px Arial, sans-serif';
+        ctx.fillStyle = '#c7f9cc';
+        ctx.textAlign = 'center';
+        ctx.fillText(weather.time, cellX + (cellWidth - 8) / 2, cellY + 16);
+        
+        // Draw weather icon
+        ctx.font = '20px Arial, sans-serif';
+        ctx.fillText(weather.icon, cellX + (cellWidth - 8) / 2, cellY + 40);
+        
+        // Draw temperature
+        ctx.font = '500 16px Arial, sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`${weather.temp}°`, cellX + (cellWidth - 8) / 2, cellY + 60);
+      }
+    } else {
+      // Draw placeholder weather if no data
+      const placeholderWeather = [
+        { time: '6 AM', icon: '🌥️', temp: '48' },
+        { time: '9 AM', icon: '⛅', temp: '53' },
+        { time: '12 PM', icon: '☀️', temp: '59' },
+        { time: '3 PM', icon: '☀️', temp: '63' },
+        { time: '6 PM', icon: '🌤️', temp: '58' },
+        { time: '9 PM', icon: '🌙', temp: '51' },
+        { time: '12 AM', icon: '🌙', temp: '47' },
+        { time: '3 AM', icon: '🌙', temp: '45' }
+      ];
       
-      // Draw time
-      ctx.font = '12px Arial, sans-serif';
-      ctx.fillStyle = 'rgba(51, 51, 51, 0.6)';
-      ctx.textAlign = 'center';
-      ctx.fillText(hour.displayTime, cellX + (cellWidth - cellPadding) / 2, cellY + 20);
+      const gridStartX = weatherSection.x + 20;
+      const gridStartY = weatherStartY + 20;
+      const cellWidth = (weatherSection.width - 40) / 4;
+      const cellHeight = 70;
       
-      // Draw weather icon (emoji)
-      ctx.font = '22px Arial';
-      ctx.fillText(hour.icon, cellX + (cellWidth - cellPadding) / 2, cellY + 45);
-      
-      // Draw temperature
-      ctx.font = '500 18px Arial, sans-serif';
-      ctx.fillStyle = '#333';
-      ctx.fillText(`${hour.temp}°`, cellX + (cellWidth - cellPadding) / 2, cellY + 70);
+      for (let i = 0; i < 8; i++) {
+        const weather = placeholderWeather[i];
+        const row = Math.floor(i / 4);
+        const col = i % 4;
+        
+        const cellX = gridStartX + col * cellWidth;
+        const cellY = gridStartY + row * cellHeight;
+        
+        // Draw cell background
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        roundRect(ctx, cellX, cellY, cellWidth - 8, cellHeight - 8, 6, true);
+        
+        // Draw time
+        ctx.font = '11px Arial, sans-serif';
+        ctx.fillStyle = '#c7f9cc';
+        ctx.textAlign = 'center';
+        ctx.fillText(weather.time, cellX + (cellWidth - 8) / 2, cellY + 16);
+        
+        // Draw weather icon
+        ctx.font = '20px Arial, sans-serif';
+        ctx.fillText(weather.icon, cellX + (cellWidth - 8) / 2, cellY + 40);
+        
+        // Draw temperature
+        ctx.font = '500 16px Arial, sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText(`${weather.temp}°`, cellX + (cellWidth - 8) / 2, cellY + 60);
+      }
     }
     
-    // Convert canvas to buffer
+    // Convert canvas to buffer and cache it
     const buffer = canvas.toBuffer('image/png');
-    
-    // Cache the image
     imageCache[cacheKey] = {
-      buffer: buffer,
+      buffer,
       timestamp: Date.now()
     };
     
@@ -372,20 +452,36 @@ async function renderAsImage(data) {
   }
 }
 
-// Helper function to draw rounded rectangle
-function drawRoundedRect(ctx, x, y, width, height, radius) {
+// Helper function to draw rounded rectangles
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  if (typeof radius === 'undefined') {
+    radius = 5;
+  }
+  if (typeof radius === 'number') {
+    radius = {tl: radius, tr: radius, br: radius, bl: radius};
+  } else {
+    var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
+    for (var side in defaultRadius) {
+      radius[side] = radius[side] || defaultRadius[side];
+    }
+  }
   ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.moveTo(x + radius.tl, y);
+  ctx.lineTo(x + width - radius.tr, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+  ctx.lineTo(x + width, y + height - radius.br);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+  ctx.lineTo(x + radius.bl, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+  ctx.lineTo(x, y + radius.tl);
+  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
   ctx.closePath();
-  ctx.fill();
+  if (fill) {
+    ctx.fill();
+  }
+  if (stroke) {
+    ctx.stroke();
+  }
 }
 
 // Helper function to wrap text
