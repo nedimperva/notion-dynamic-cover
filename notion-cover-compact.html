@@ -51,6 +51,7 @@
     
     .quote-container {
       max-width: 500px;
+      margin-left: 20px;
     }
     
     .quote {
@@ -97,43 +98,36 @@
       color: #e0fbfc;
     }
     
-    .weather-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-gap: 8px;
+    .weather-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
     }
     
-    .weather-hour {
-      text-align: center;
-      padding: 8px 4px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.15);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-      transition: transform 0.2s, background 0.2s;
+    .weather-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 5px 0;
     }
     
-    .weather-hour:hover {
-      transform: translateY(-2px);
-      background: rgba(255, 255, 255, 0.25);
-    }
-    
-    .time {
-      font-size: 11px;
-      margin-bottom: 4px;
-      opacity: 0.8;
+    .time-block {
+      font-size: 12px;
       color: #c7f9cc;
+      width: 120px;
+    }
+    
+    .icon {
+      font-size: 18px;
+      width: 30px;
+      text-align: center;
     }
     
     .temp {
       font-size: 16px;
       font-weight: 500;
-      margin: 2px 0;
-      color: #fff;
-    }
-    
-    .icon {
-      font-size: 20px;
-      margin: 2px 0;
+      width: 40px;
+      text-align: right;
     }
     
     .accent-circle {
@@ -174,46 +168,26 @@
       <span>Today's Weather</span>
       <span class="location">Konjic</span>
     </div>
-    <div class="weather-grid">
-      <div class="weather-hour">
-        <div class="time">6 AM</div>
-        <div class="icon">🌥️</div>
-        <div class="temp">48°</div>
+    <div class="weather-list">
+      <div class="weather-item">
+        <div class="time-block">00:00 - 06:00</div>
+        <div class="icon">🌙</div>
+        <div class="temp">45°</div>
       </div>
-      <div class="weather-hour">
-        <div class="time">9 AM</div>
+      <div class="weather-item">
+        <div class="time-block">06:00 - 12:00</div>
         <div class="icon">⛅</div>
         <div class="temp">53°</div>
       </div>
-      <div class="weather-hour">
-        <div class="time">12 PM</div>
+      <div class="weather-item">
+        <div class="time-block">12:00 - 18:00</div>
         <div class="icon">☀️</div>
-        <div class="temp">59°</div>
+        <div class="temp">61°</div>
       </div>
-      <div class="weather-hour">
-        <div class="time">3 PM</div>
-        <div class="icon">☀️</div>
-        <div class="temp">63°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">6 PM</div>
-        <div class="icon">🌤️</div>
-        <div class="temp">58°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">9 PM</div>
+      <div class="weather-item">
+        <div class="time-block">18:00 - 00:00</div>
         <div class="icon">🌙</div>
-        <div class="temp">51°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">12 AM</div>
-        <div class="icon">🌙</div>
-        <div class="temp">47°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">3 AM</div>
-        <div class="icon">🌙</div>
-        <div class="temp">45°</div>
+        <div class="temp">52°</div>
       </div>
     </div>
   </div>

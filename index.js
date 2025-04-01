@@ -308,9 +308,9 @@ async function renderAsImage(data) {
     // Center quote in the quote section
     ctx.textAlign = 'left';
     
-    // Draw quote
-    const quoteX = quoteSection.x + 40;
-    const quoteMaxWidth = quoteSection.width - 80;
+    // Draw quote - moved more to the right
+    const quoteX = quoteSection.x + 60; // Increased from 40 to 60
+    const quoteMaxWidth = quoteSection.width - 100; // Adjusted to maintain right margin
     
     // Wrap quote text
     ctx.font = '300 22px Arial, sans-serif';
@@ -341,7 +341,7 @@ async function renderAsImage(data) {
     ctx.fillRect(weatherSection.x, weatherSection.y, weatherSection.width, weatherSection.height);
     
     // Calculate vertical center of the weather section to align with quote
-    const weatherContentHeight = 180; // Approximate height of weather content (title + 2 rows)
+    const weatherContentHeight = 160; // Approximate height of weather content (title + 4 time blocks)
     const weatherStartY = (height - weatherContentHeight) / 2;
     
     // Draw weather title
@@ -356,86 +356,75 @@ async function renderAsImage(data) {
     ctx.fillText(data.location || 'Konjic', weatherSection.x + weatherSection.width - 20, weatherStartY);
     ctx.textAlign = 'left';
     
-    // Draw weather grid
+    // Define the 4 time blocks
+    const timeBlocks = [
+      { label: '00:00 - 06:00', condition: 'night-clear', temp: '45' },
+      { label: '06:00 - 12:00', condition: 'partly-cloudy', temp: '53' },
+      { label: '12:00 - 18:00', condition: 'sunny', temp: '61' },
+      { label: '18:00 - 00:00', condition: 'night-partly-cloudy', temp: '52' }
+    ];
+    
+    // Process weather data if available
+    let processedWeather = [...timeBlocks]; // Default to placeholder data
+    
     if (data.weather && data.weather.length > 0) {
-      const gridStartX = weatherSection.x + 20;
-      const gridStartY = weatherStartY + 20;
-      const cellWidth = (weatherSection.width - 40) / 4;
-      const cellHeight = 70;
-      const cellPadding = 4;
+      // Simple mapping - in a real app you'd aggregate data more intelligently
+      // This just takes the first entry for each time block if available
+      const weatherMap = {};
+      data.weather.forEach(item => {
+        const hour = parseInt(item.time.split(' ')[0]);
+        let blockIndex = 0;
+        
+        if (hour >= 0 && hour < 6) blockIndex = 0;
+        else if (hour >= 6 && hour < 12) blockIndex = 1;
+        else if (hour >= 12 && hour < 18) blockIndex = 2;
+        else blockIndex = 3;
+        
+        if (!weatherMap[blockIndex]) {
+          weatherMap[blockIndex] = {
+            label: timeBlocks[blockIndex].label,
+            condition: item.condition || item.icon,
+            temp: item.temp
+          };
+        }
+      });
       
-      for (let i = 0; i < Math.min(data.weather.length, 8); i++) {
-        const weather = data.weather[i];
-        const row = Math.floor(i / 4);
-        const col = i % 4;
-        
-        const cellX = gridStartX + col * cellWidth;
-        const cellY = gridStartY + row * cellHeight;
-        
-        // Draw cell background
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        roundRect(ctx, cellX, cellY, cellWidth - 8, cellHeight - 8, 6, true);
-        
-        // Draw time
-        ctx.font = '11px Arial, sans-serif';
-        ctx.fillStyle = '#c7f9cc';
-        ctx.textAlign = 'center';
-        ctx.fillText(weather.time, cellX + (cellWidth - 8) / 2, cellY + 16);
-        
-        // Draw weather icon
-        ctx.font = '20px Arial, sans-serif';
-        ctx.fillText(weather.icon, cellX + (cellWidth - 8) / 2, cellY + 40);
-        
-        // Draw temperature
-        ctx.font = '500 16px Arial, sans-serif';
-        ctx.fillStyle = '#fff';
-        ctx.fillText(`${weather.temp}°`, cellX + (cellWidth - 8) / 2, cellY + 60);
+      // Fill in any missing blocks with placeholder data
+      for (let i = 0; i < 4; i++) {
+        if (!weatherMap[i]) {
+          weatherMap[i] = timeBlocks[i];
+        }
       }
-    } else {
-      // Draw placeholder weather if no data
-      const placeholderWeather = [
-        { time: '6 AM', icon: '🌥️', temp: '48' },
-        { time: '9 AM', icon: '⛅', temp: '53' },
-        { time: '12 PM', icon: '☀️', temp: '59' },
-        { time: '3 PM', icon: '☀️', temp: '63' },
-        { time: '6 PM', icon: '🌤️', temp: '58' },
-        { time: '9 PM', icon: '🌙', temp: '51' },
-        { time: '12 AM', icon: '🌙', temp: '47' },
-        { time: '3 AM', icon: '🌙', temp: '45' }
-      ];
       
-      const gridStartX = weatherSection.x + 20;
-      const gridStartY = weatherStartY + 20;
-      const cellWidth = (weatherSection.width - 40) / 4;
-      const cellHeight = 70;
+      processedWeather = [weatherMap[0], weatherMap[1], weatherMap[2], weatherMap[3]];
+    }
+    
+    // Draw weather items
+    const gridStartX = weatherSection.x + 20;
+    const gridStartY = weatherStartY + 30;
+    
+    for (let i = 0; i < 4; i++) {
+      const weather = processedWeather[i];
+      const cellY = gridStartY + i * 30;
       
-      for (let i = 0; i < 8; i++) {
-        const weather = placeholderWeather[i];
-        const row = Math.floor(i / 4);
-        const col = i % 4;
-        
-        const cellX = gridStartX + col * cellWidth;
-        const cellY = gridStartY + row * cellHeight;
-        
-        // Draw cell background
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        roundRect(ctx, cellX, cellY, cellWidth - 8, cellHeight - 8, 6, true);
-        
-        // Draw time
-        ctx.font = '11px Arial, sans-serif';
-        ctx.fillStyle = '#c7f9cc';
-        ctx.textAlign = 'center';
-        ctx.fillText(weather.time, cellX + (cellWidth - 8) / 2, cellY + 16);
-        
-        // Draw weather icon
-        ctx.font = '20px Arial, sans-serif';
-        ctx.fillText(weather.icon, cellX + (cellWidth - 8) / 2, cellY + 40);
-        
-        // Draw temperature
-        ctx.font = '500 16px Arial, sans-serif';
-        ctx.fillStyle = '#fff';
-        ctx.fillText(`${weather.temp}°`, cellX + (cellWidth - 8) / 2, cellY + 60);
-      }
+      // Draw time period
+      ctx.font = '12px Arial, sans-serif';
+      ctx.fillStyle = '#c7f9cc';
+      ctx.textAlign = 'left';
+      ctx.fillText(weather.label, gridStartX, cellY);
+      
+      // Draw weather icon
+      const weatherIcon = getWeatherIcon(weather.condition);
+      ctx.font = '18px Arial, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'center';
+      ctx.fillText(weatherIcon, gridStartX + 160, cellY);
+      
+      // Draw temperature
+      ctx.font = '500 16px Arial, sans-serif';
+      ctx.fillStyle = '#fff';
+      ctx.textAlign = 'right';
+      ctx.fillText(`${weather.temp}°`, gridStartX + 220, cellY);
     }
     
     // Convert canvas to buffer and cache it
@@ -450,6 +439,33 @@ async function renderAsImage(data) {
     console.error('Error rendering image:', error);
     throw error;
   }
+}
+
+// Helper function to convert weather condition to text representation
+function getWeatherIcon(condition) {
+  const iconMap = {
+    'sunny': '☀️',
+    'clear': '☀️',
+    'partly-cloudy': '⛅',
+    'cloudy': '☁️',
+    'overcast': '☁️',
+    'rain': '🌧️',
+    'showers': '🌦️',
+    'thunderstorm': '⛈️',
+    'snow': '❄️',
+    'fog': '🌫️',
+    'night-clear': '🌙',
+    'night-partly-cloudy': '🌙',
+    'night-cloudy': '☁️'
+  };
+  
+  // If condition is already an emoji, return it
+  if (condition && condition.length <= 2) {
+    return condition;
+  }
+  
+  // Return the mapped icon or a default one
+  return iconMap[condition] || '☀️';
 }
 
 // Helper function to draw rounded rectangles
@@ -796,6 +812,14 @@ function renderTemplate(template, data) {
   
   return html;
 }
+
+// Add a cache reset endpoint
+app.get('/reset-cache', (req, res) => {
+  // Clear the image cache
+  imageCache = {};
+  console.log('Image cache has been reset');
+  res.send('Image cache has been reset successfully');
+});
 
 // Start the server
 app.listen(PORT, () => {
