@@ -59,11 +59,16 @@ The dynamic cover will be available at `http://localhost:3000`
 1. Open your Notion page
 2. Change the cover image
 3. Select "Link" and enter one of the following URLs:
-   - `http://localhost:3000` - Uses default weather location
-   - `http://localhost:3000/cover/City-CountryCode` - Uses weather for the specified location
-     - Example: `http://localhost:3000/cover/Konjic-ba` for Konjic, Bosnia
-     - Format: City name followed by country code, separated by a hyphen
+   - **For image covers** (recommended for Notion):
+     - `http://localhost:3000/image` - Default location with image format
+     - `http://localhost:3000/image/City-CountryCode` - Location-based weather with image format
+       - Example: `http://localhost:3000/image/Konjic-ba` for Konjic, Bosnia
+   - **For HTML format** (for viewing in browser):
+     - `http://localhost:3000` - Default location in HTML format
+     - `http://localhost:3000/cover/City-CountryCode` - Location-based weather in HTML format
 4. The cover will update with a new quote and weather data whenever the page is refreshed
+
+> **Important**: When using as a Notion cover, always use the `/image` endpoints which return PNG images instead of HTML.
 
 ## Customization
 

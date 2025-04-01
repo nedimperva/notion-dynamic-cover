@@ -3,6 +3,7 @@ const { Client } = require('@notionhq/client');
 const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
+const { createCanvas, registerFont } = require('canvas');
 require('dotenv').config(); // Add dotenv to properly load environment variables
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -22,11 +23,67 @@ console.log(`NOTION_DATABASE_ID: ${process.env.NOTION_DATABASE_ID ? '***' + proc
 // Serve static files
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Cache for rendered images
+const imageCache = {};
+const IMAGE_CACHE_DURATION = 1000 * 60 * 60; // 1 hour
+
 // Location mapping cache
 const locationCache = {};
 
 // Main route for the Notion cover
 app.get('/', async (req, res) => {
+  try {
+    const format = req.query.format || 'html';
+    
+    // Get quote data from Notion with fallback
+    let quoteData;
+    try {
+      quoteData = await getRandomQuote();
+    } catch (error) {
+      console.error('Error fetching from Notion, using fallback quote:', error);
+      quoteData = getFallbackQuote();
+    }
+    
+    // Get weather data from yr.no (default location)
+    const weatherData = await getWeatherData();
+    
+    // Combine data and render the page
+    const data = {
+      quote: quoteData.quote,
+      author: quoteData.author,
+      category: quoteData.category,
+      date: new Date().toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }),
+      weather: weatherData,
+      location: "Default Location"
+    };
+    
+    if (format === 'image') {
+      // Return as image
+      const imageBuffer = await renderAsImage(data);
+      res.contentType('image/png');
+      res.send(imageBuffer);
+    } else {
+      // Read the template file
+      const template = fs.readFileSync(path.join(__dirname, 'public', 'notion-cover-template.html'), 'utf8');
+      
+      // Replace placeholders with actual data
+      const html = renderTemplate(template, data);
+      
+      // Return as HTML
+      res.send(html);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('An error occurred');
+  }
+});
+
+// Image route for the Notion cover
+app.get('/image', async (req, res) => {
   try {
     // Get quote data from Notion with fallback
     let quoteData;
@@ -54,13 +111,10 @@ app.get('/', async (req, res) => {
       location: "Default Location"
     };
     
-    // Read the template file
-    const template = fs.readFileSync(path.join(__dirname, 'public', 'notion-cover-template.html'), 'utf8');
-    
-    // Replace placeholders with actual data
-    const html = renderTemplate(template, data);
-    
-    res.send(html);
+    // Return as image
+    const imageBuffer = await renderAsImage(data);
+    res.contentType('image/png');
+    res.send(imageBuffer);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).send('An error occurred');
@@ -69,6 +123,62 @@ app.get('/', async (req, res) => {
 
 // Location-based route for the Notion cover
 app.get('/cover/:location', async (req, res) => {
+  try {
+    const locationParam = req.params.location;
+    const format = req.query.format || 'html';
+    
+    // Get quote data from Notion with fallback
+    let quoteData;
+    try {
+      quoteData = await getRandomQuote();
+    } catch (error) {
+      console.error('Error fetching from Notion, using fallback quote:', error);
+      quoteData = getFallbackQuote();
+    }
+    
+    // Get coordinates for the location
+    const coordinates = await getCoordinates(locationParam);
+    
+    // Get weather data from yr.no for the specific location
+    const weatherData = await getWeatherData(coordinates.lat, coordinates.lon);
+    
+    // Combine data and render the page
+    const data = {
+      quote: quoteData.quote,
+      author: quoteData.author,
+      category: quoteData.category,
+      date: new Date().toLocaleDateString('en-US', { 
+        month: 'long', 
+        day: 'numeric', 
+        year: 'numeric' 
+      }),
+      weather: weatherData,
+      location: coordinates.displayName
+    };
+    
+    if (format === 'image') {
+      // Return as image
+      const imageBuffer = await renderAsImage(data);
+      res.contentType('image/png');
+      res.send(imageBuffer);
+    } else {
+      // Read the template file
+      const template = fs.readFileSync(path.join(__dirname, 'public', 'notion-cover-template.html'), 'utf8');
+      
+      // Replace placeholders with actual data
+      const html = renderTemplate(template, data);
+      
+      // Return as HTML
+      res.send(html);
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    res.status(500).send('An error occurred: ' + error.message);
+  }
+});
+
+// Location-based image route for the Notion cover
+app.get('/image/:location', async (req, res) => {
   try {
     const locationParam = req.params.location;
     
@@ -101,18 +211,171 @@ app.get('/cover/:location', async (req, res) => {
       location: coordinates.displayName
     };
     
-    // Read the template file
-    const template = fs.readFileSync(path.join(__dirname, 'public', 'notion-cover-template.html'), 'utf8');
-    
-    // Replace placeholders with actual data
-    const html = renderTemplate(template, data);
-    
-    res.send(html);
+    // Return as image
+    const imageBuffer = await renderAsImage(data);
+    res.contentType('image/png');
+    res.send(imageBuffer);
   } catch (error) {
     console.error('Error:', error);
     res.status(500).send('An error occurred: ' + error.message);
   }
 });
+
+// Function to render data as image using canvas
+async function renderAsImage(data) {
+  const cacheKey = JSON.stringify(data);
+  
+  // Check if we have a cached image that's still valid
+  if (imageCache[cacheKey] && imageCache[cacheKey].timestamp > Date.now() - IMAGE_CACHE_DURATION) {
+    console.log('Using cached image');
+    return imageCache[cacheKey].buffer;
+  }
+  
+  console.log('Rendering new image...');
+  
+  try {
+    // Create canvas with Notion cover dimensions
+    const width = 1500;
+    const height = 600;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    
+    // Draw background gradient
+    const gradient = ctx.createLinearGradient(0, 0, width, height);
+    gradient.addColorStop(0, '#f5f7fa');
+    gradient.addColorStop(1, '#e4e9f2');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw date in top right
+    ctx.font = '14px Arial';
+    ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
+    ctx.textAlign = 'right';
+    ctx.fillText(data.date, width - 30, 30);
+    
+    // Draw quote section (left side)
+    ctx.textAlign = 'left';
+    
+    // Draw quote
+    const quoteX = 50;
+    const quoteMaxWidth = width * 0.55;
+    
+    // Wrap quote text
+    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 28);
+    let quoteY = height / 2 - (quoteLines.length * 36) / 2;
+    
+    ctx.font = '28px Arial';
+    ctx.fillStyle = '#333';
+    quoteLines.forEach(line => {
+      ctx.fillText(line, quoteX, quoteY);
+      quoteY += 36;
+    });
+    
+    // Draw author
+    ctx.font = 'italic 14px Arial';
+    ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
+    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 20);
+    
+    // Draw weather section (right side)
+    const weatherSectionX = width * 0.6;
+    const weatherSectionWidth = width * 0.4;
+    const weatherSectionHeight = height;
+    
+    // Draw weather section background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+    ctx.fillRect(weatherSectionX, 0, weatherSectionWidth, weatherSectionHeight);
+    
+    // Draw weather title
+    ctx.font = '16px Arial';
+    ctx.fillStyle = 'rgba(51, 51, 51, 0.8)';
+    ctx.fillText("Today's Weather", weatherSectionX + 30, 50);
+    
+    // Draw location if available
+    if (data.location) {
+      ctx.font = 'italic 14px Arial';
+      ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
+      ctx.textAlign = 'right';
+      ctx.fillText(data.location, weatherSectionX + weatherSectionWidth - 30, 50);
+      ctx.textAlign = 'left';
+    }
+    
+    // Draw weather grid
+    const gridStartX = weatherSectionX + 30;
+    const gridStartY = 80;
+    const cellWidth = (weatherSectionWidth - 60) / 4;
+    const cellHeight = 80;
+    const cellPadding = 6;
+    
+    // Draw weather hours
+    for (let i = 0; i < Math.min(data.weather.length, 8); i++) {
+      const hour = data.weather[i];
+      const row = Math.floor(i / 4);
+      const col = i % 4;
+      const cellX = gridStartX + col * cellWidth;
+      const cellY = gridStartY + row * cellHeight;
+      
+      // Draw cell background
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      ctx.fillRect(
+        cellX, 
+        cellY, 
+        cellWidth - cellPadding, 
+        cellHeight - cellPadding
+      );
+      
+      // Draw time
+      ctx.font = '12px Arial';
+      ctx.fillStyle = 'rgba(51, 51, 51, 0.6)';
+      ctx.textAlign = 'center';
+      ctx.fillText(hour.displayTime, cellX + (cellWidth - cellPadding) / 2, cellY + 20);
+      
+      // Draw weather icon
+      ctx.font = '22px Arial';
+      ctx.fillText(hour.icon, cellX + (cellWidth - cellPadding) / 2, cellY + 45);
+      
+      // Draw temperature
+      ctx.font = '18px Arial';
+      ctx.fillStyle = '#333';
+      ctx.fillText(`${hour.temp}°`, cellX + (cellWidth - cellPadding) / 2, cellY + 70);
+    }
+    
+    // Convert canvas to buffer
+    const buffer = canvas.toBuffer('image/png');
+    
+    // Cache the image
+    imageCache[cacheKey] = {
+      buffer: buffer,
+      timestamp: Date.now()
+    };
+    
+    return buffer;
+  } catch (error) {
+    console.error('Error rendering image:', error);
+    throw error;
+  }
+}
+
+// Helper function to wrap text
+function wrapText(ctx, text, maxWidth, fontSize) {
+  const words = text.split(' ');
+  const lines = [];
+  let currentLine = words[0];
+  
+  ctx.font = `${fontSize}px Arial`;
+  
+  for (let i = 1; i < words.length; i++) {
+    const word = words[i];
+    const width = ctx.measureText(currentLine + ' ' + word).width;
+    if (width < maxWidth) {
+      currentLine += ' ' + word;
+    } else {
+      lines.push(currentLine);
+      currentLine = word;
+    }
+  }
+  lines.push(currentLine);
+  return lines;
+}
 
 // Function to get coordinates from location string
 async function getCoordinates(locationString) {
@@ -410,4 +673,6 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`For location-based weather, use: http://localhost:${PORT}/cover/City-CountryCode`);
   console.log(`Example: http://localhost:${PORT}/cover/Konjic-ba for Konjic, Bosnia`);
+  console.log(`For image format (for Notion cover), use: http://localhost:${PORT}/image`);
+  console.log(`For location-based image, use: http://localhost:${PORT}/image/City-CountryCode`);
 });
