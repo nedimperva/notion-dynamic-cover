@@ -44,8 +44,11 @@ app.get('/', async (req, res) => {
       quoteData = getFallbackQuote();
     }
     
-    // Get weather data from yr.no (default location)
-    const weatherData = await getWeatherData();
+    // Get coordinates for Konjic, Bosnia (default location)
+    const coordinates = await getCoordinates('Konjic-ba');
+    
+    // Get weather data for Konjic, Bosnia
+    const weatherData = await getWeatherData(coordinates.lat, coordinates.lon);
     
     // Combine data and render the page
     const data = {
@@ -58,7 +61,7 @@ app.get('/', async (req, res) => {
         year: 'numeric' 
       }),
       weather: weatherData,
-      location: "Default Location"
+      location: coordinates.displayName
     };
     
     if (format === 'image') {
@@ -94,8 +97,11 @@ app.get('/image', async (req, res) => {
       quoteData = getFallbackQuote();
     }
     
-    // Get weather data from yr.no (default location)
-    const weatherData = await getWeatherData();
+    // Get coordinates for Konjic, Bosnia (default location)
+    const coordinates = await getCoordinates('Konjic-ba');
+    
+    // Get weather data for Konjic, Bosnia
+    const weatherData = await getWeatherData(coordinates.lat, coordinates.lon);
     
     // Combine data and render the page
     const data = {
@@ -108,7 +114,7 @@ app.get('/image', async (req, res) => {
         year: 'numeric' 
       }),
       weather: weatherData,
-      location: "Default Location"
+      location: coordinates.displayName
     };
     
     // Return as image
@@ -519,7 +525,7 @@ async function getRandomQuote() {
 }
 
 // Function to get weather data from yr.no
-async function getWeatherData(lat = 59.9139, lon = 10.7522) {
+async function getWeatherData(lat = 43.65, lon = 17.9667) {
   try {
     // Get weather data from yr.no API
     const response = await axios.get('https://api.met.no/weatherapi/locationforecast/2.0/compact', {
