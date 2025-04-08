@@ -124,6 +124,7 @@ async function renderAsImage(data) {
   console.log('Rendering new image...');
   
   try {
+<<<<<<< HEAD
     // Set dimensions
     const width = 1500;
     const height = 600;
@@ -144,9 +145,46 @@ async function renderAsImage(data) {
     ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
     ctx.textAlign = 'right';
     ctx.fillText(data.date, width - 20, 20);
+=======
+    // Create canvas with compact Notion cover dimensions
+    const width = 1000;
+    const height = 420;
+    const canvas = createCanvas(width, height);
+    const ctx = canvas.getContext('2d');
+    
+    // Draw solid off-white background instead of gradient
+    ctx.fillStyle = '#f8f9fa';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw accent circles with subtle gray
+    ctx.beginPath();
+    ctx.arc(40, 20, 60, 0, Math.PI * 2);
+    const circleGradient1 = ctx.createRadialGradient(40, 20, 0, 40, 20, 60);
+    circleGradient1.addColorStop(0, 'rgba(0,0,0,0.05)');
+    circleGradient1.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = circleGradient1;
+    ctx.fill();
+    
+    ctx.beginPath();
+    ctx.arc(width - 380, height - 30, 60, 0, Math.PI * 2);
+    const circleGradient2 = ctx.createRadialGradient(width - 380, height - 30, 0, width - 380, height - 30, 60);
+    circleGradient2.addColorStop(0, 'rgba(0,0,0,0.05)');
+    circleGradient2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = circleGradient2;
+    ctx.fill();
+    
+    // Draw divider between sections
+    const dividerX = width * 0.6;
+    ctx.beginPath();
+    ctx.moveTo(dividerX, 0);
+    ctx.lineTo(dividerX, height);
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+    ctx.stroke();
+>>>>>>> e5511af1020c08dfbd64c66da11c3e6e0a810a4b
     
     // Draw quote section
     ctx.textAlign = 'left';
+<<<<<<< HEAD
     const quoteFontSize = 28;
     const quoteX = width * 0.1;
     const quoteMaxWidth = width * 0.8;
@@ -169,13 +207,195 @@ async function renderAsImage(data) {
     ctx.font = 'italic 14px Arial, sans-serif';
     ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
     ctx.fillText(`— ${data.author}`, quoteX, quoteY + 10);
+=======
     
-    // Convert canvas to buffer
+    // Draw quote - moved more to the right with smaller font size
+    const quoteX = quoteSection.x + 60;
+    const quoteMaxWidth = quoteSection.width - 100;
+    
+    // Reduced font size from 22px to 20px
+    ctx.font = '300 18px Arial, sans-serif';
+    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 18);
+    
+    // Calculate the total height of the quote text
+    const lineHeight = 24; // Reduced from 26 to 24
+    const totalQuoteHeight = quoteLines.length * lineHeight;
+    
+    // Limit the number of lines to ensure it doesn't exceed the weather box height
+    const maxLines = Math.min(quoteLines.length, 6); // Limit to 6 lines maximum
+    const truncatedQuoteLines = quoteLines.slice(0, maxLines);
+    
+    // If we truncated, add ellipsis to the last line
+    if (truncatedQuoteLines.length < quoteLines.length) {
+      let lastLine = truncatedQuoteLines[truncatedQuoteLines.length - 1];
+      // Trim the last line if needed to make room for ellipsis
+      while (ctx.measureText(lastLine + '..."').width > quoteMaxWidth) {
+        lastLine = lastLine.slice(0, -1);
+      }
+      truncatedQuoteLines[truncatedQuoteLines.length - 1] = lastLine + '...';
+    }
+    
+    let quoteY = height / 2 - (truncatedQuoteLines.length * lineHeight) / 2;
+    
+    ctx.fillStyle = '#333333';
+    truncatedQuoteLines.forEach(line => {
+      ctx.fillText(line, quoteX, quoteY);
+      quoteY += lineHeight;
+    });
+    
+    // Add closing quote if we didn't truncate
+    if (truncatedQuoteLines.length === quoteLines.length) {
+      ctx.fillText('"', quoteX + ctx.measureText(truncatedQuoteLines[truncatedQuoteLines.length - 1]).width, quoteY - lineHeight);
+    }
+    
+    // Draw author with smaller font
+    ctx.font = 'italic 11px Arial, sans-serif'; // Reduced from 12px to 11px
+    ctx.fillStyle = '#666666';
+    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 8); // Reduced spacing from 10 to 8
+    
+    // Draw weather section (right side)
+    const weatherSection = {
+      x: width * 0.6,
+      y: 0,
+      width: width * 0.4,
+      height: height
+    };
+    
+    // Fill weather section background with very light gray
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.02)';
+    ctx.fillRect(weatherSection.x, weatherSection.y, weatherSection.width, weatherSection.height);
+    
+    // Calculate vertical center of the weather section to align with quote
+    const weatherContentHeight = 200; // Approximate height of weather content (title + 2x2 grid)
+    const weatherStartY = (height - weatherContentHeight) / 2;
+    
+    // Format date to show day and month only
+    const dateObj = new Date(data.date);
+    const formattedDate = dateObj.toLocaleDateString('en-US', { 
+      day: 'numeric', 
+      month: 'short'
+    });
+    
+    // Draw location and date
+    ctx.font = '500 12px Arial, sans-serif'; // Reduced from 14px to 12px
+    ctx.fillStyle = '#444444';
+    ctx.textAlign = 'left';
+    ctx.fillText(data.location || 'Konjic', weatherSection.x + 20, weatherStartY);
+    
+    // Draw date next to location
+    ctx.font = '400 12px Arial, sans-serif'; // Reduced from 14px to 12px
+    ctx.fillStyle = '#666666';
+    ctx.textAlign = 'right';
+    ctx.fillText(formattedDate, weatherSection.x + weatherSection.width - 20, weatherStartY);
+    ctx.textAlign = 'left';
+    
+    // Define the 4 time blocks for 2x2 grid
+    const timeBlocks = [
+      { label: '00:00 - 06:00', condition: 'night-clear', temp: '45' },
+      { label: '06:00 - 12:00', condition: 'partly-cloudy', temp: '53' },
+      { label: '12:00 - 18:00', condition: 'sunny', temp: '61' },
+      { label: '18:00 - 00:00', condition: 'night-partly-cloudy', temp: '52' }
+    ];
+    
+    // Process weather data if available
+    let processedWeather = [...timeBlocks]; // Default to placeholder data
+    
+    if (data.weather && data.weather.length > 0) {
+      // Simple mapping - in a real app you'd aggregate data more intelligently
+      // This just takes the first entry for each time block if available
+      const weatherMap = {};
+      data.weather.forEach(item => {
+        const hour = parseInt(item.time.split(' ')[0]);
+        let blockIndex = 0;
+        
+        if (hour >= 0 && hour < 6) blockIndex = 0;
+        else if (hour >= 6 && hour < 12) blockIndex = 1;
+        else if (hour >= 12 && hour < 18) blockIndex = 2;
+        else blockIndex = 3;
+        
+        if (!weatherMap[blockIndex]) {
+          weatherMap[blockIndex] = {
+            label: timeBlocks[blockIndex].label,
+            condition: item.condition || item.icon,
+            temp: item.temp
+          };
+        }
+      });
+      
+      // Fill in any missing blocks with placeholder data
+      for (let i = 0; i < 4; i++) {
+        if (!weatherMap[i]) {
+          weatherMap[i] = timeBlocks[i];
+        }
+      }
+      
+      processedWeather = [weatherMap[0], weatherMap[1], weatherMap[2], weatherMap[3]];
+    }
+    
+    // Draw weather grid (2x2) - smaller size
+    const gridStartX = weatherSection.x + 30; // Moved further right for more margin
+    const gridStartY = weatherStartY + 25; // Moved up slightly
+    const cellWidth = (weatherSection.width - 80) / 2; // Even smaller cells
+    const cellHeight = 60; // Even shorter cells
+    
+    for (let i = 0; i < 4; i++) {
+      const weather = processedWeather[i];
+      const row = Math.floor(i / 2);
+      const col = i % 2;
+      
+      const cellX = gridStartX + col * (cellWidth + 10);
+      const cellY = gridStartY + row * (cellHeight + 10);
+      
+      // Draw cell background (white box with shadow)
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+      ctx.shadowBlur = 4; // Even smaller shadow
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 1; // Smaller shadow offset
+      roundRect(ctx, cellX, cellY, cellWidth, cellHeight, 5, true); // Smaller corner radius
+      
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetX = 0;
+      ctx.shadowOffsetY = 0;
+      
+      // Draw time period - even smaller text
+      ctx.font = '9px Arial, sans-serif'; // Reduced from 10px to 9px
+      ctx.fillStyle = '#666666';
+      ctx.textAlign = 'center';
+      ctx.fillText(weather.label, cellX + cellWidth/2, cellY + 14);
+      
+      // Draw weather icon with color
+      const weatherIcon = getWeatherIcon(weather.condition);
+      const iconColor = getWeatherIconColor(weather.condition);
+      
+      // Draw colored weather icon directly
+      ctx.font = '20px sans-serif'; // Reduced from 22px to 20px
+      ctx.fillStyle = iconColor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(weatherIcon, cellX + cellWidth/2, cellY + 32);
+      ctx.textBaseline = 'alphabetic';
+      
+      // Generate min/max temperature range
+      // If we have actual min/max data, use it; otherwise, generate fake range
+      const tempValue = parseInt(weather.temp) || 0;
+      const minTemp = weather.minTemp || (tempValue - Math.floor(Math.random() * 4 + 2));
+      const maxTemp = weather.maxTemp || (tempValue + Math.floor(Math.random() * 4 + 2));
+      
+      // Draw temperature range - even smaller text
+      ctx.font = '400 9px Arial, sans-serif'; // Reduced from 10px to 9px
+      ctx.fillStyle = '#333333';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${minTemp}° - ${maxTemp}°`, cellX + cellWidth/2, cellY + 50);
+    }
+>>>>>>> e5511af1020c08dfbd64c66da11c3e6e0a810a4b
+    
+    // Convert canvas to buffer and cache it
     const buffer = canvas.toBuffer('image/png');
-    
-    // Cache the image
     imageCache[cacheKey] = {
-      buffer: buffer,
+      buffer,
       timestamp: Date.now()
     };
     
@@ -186,20 +406,84 @@ async function renderAsImage(data) {
   }
 }
 
-// Helper function to draw rounded rectangle
-function drawRoundedRect(ctx, x, y, width, height, radius) {
+// Helper function to convert weather condition to text representation
+function getWeatherIcon(condition) {
+  const iconMap = {
+    'sunny': '☀',
+    'clear': '☀',
+    'partly-cloudy': '⛅',
+    'cloudy': '☁',
+    'overcast': '☁',
+    'rain': '🌧',
+    'showers': '🌦',
+    'thunderstorm': '⛈',
+    'snow': '❄',
+    'fog': '🌫',
+    'night-clear': '🌙',
+    'night-partly-cloudy': '🌙',
+    'night-cloudy': '☁'
+  };
+  
+  // If condition is already an emoji, return it
+  if (condition && condition.length <= 2) {
+    return condition;
+  }
+  
+  // Return the mapped icon or a default one
+  return iconMap[condition] || '☀';
+}
+
+// Helper function to get color for weather icon
+function getWeatherIconColor(condition) {
+  const colorMap = {
+    'sunny': '#FF9500',        // Orange
+    'clear': '#FF9500',        // Orange
+    'partly-cloudy': '#87CEEB', // Sky Blue
+    'cloudy': '#6c757d',       // Gray
+    'overcast': '#495057',     // Dark Gray
+    'rain': '#0D6EFD',         // Blue
+    'showers': '#0DCAF0',      // Light Blue
+    'thunderstorm': '#6610F2', // Purple
+    'snow': '#ADB5BD',         // Light Gray
+    'fog': '#CED4DA',          // Very Light Gray
+    'night-clear': '#343A40',  // Dark Blue-Gray
+    'night-partly-cloudy': '#495057', // Dark Gray
+    'night-cloudy': '#343A40'  // Dark Blue-Gray
+  };
+  
+  return colorMap[condition] || '#FF9500'; // Default to orange
+}
+
+// Helper function to draw rounded rectangles
+function roundRect(ctx, x, y, width, height, radius, fill, stroke) {
+  if (typeof radius === 'undefined') {
+    radius = 5;
+  }
+  if (typeof radius === 'number') {
+    radius = {tl: radius, tr: radius, br: radius, bl: radius};
+  } else {
+    var defaultRadius = {tl: 0, tr: 0, br: 0, bl: 0};
+    for (var side in defaultRadius) {
+      radius[side] = radius[side] || defaultRadius[side];
+    }
+  }
   ctx.beginPath();
-  ctx.moveTo(x + radius, y);
-  ctx.lineTo(x + width - radius, y);
-  ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
-  ctx.lineTo(x + width, y + height - radius);
-  ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
-  ctx.lineTo(x + radius, y + height);
-  ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
-  ctx.lineTo(x, y + radius);
-  ctx.quadraticCurveTo(x, y, x + radius, y);
+  ctx.moveTo(x + radius.tl, y);
+  ctx.lineTo(x + width - radius.tr, y);
+  ctx.quadraticCurveTo(x + width, y, x + width, y + radius.tr);
+  ctx.lineTo(x + width, y + height - radius.br);
+  ctx.quadraticCurveTo(x + width, y + height, x + width - radius.br, y + height);
+  ctx.lineTo(x + radius.bl, y + height);
+  ctx.quadraticCurveTo(x, y + height, x, y + height - radius.bl);
+  ctx.lineTo(x, y + radius.tl);
+  ctx.quadraticCurveTo(x, y, x + radius.tl, y);
   ctx.closePath();
-  ctx.fill();
+  if (fill) {
+    ctx.fill();
+  }
+  if (stroke) {
+    ctx.stroke();
+  }
 }
 
 // Helper function to wrap text
@@ -536,6 +820,14 @@ function renderTemplate(template, data) {
   
   return html;
 }
+
+// Add a cache reset endpoint
+app.get('/reset-cache', (req, res) => {
+  // Clear the image cache
+  imageCache = {};
+  console.log('Image cache has been reset');
+  res.send('Image cache has been reset successfully');
+});
 
 // Start the server
 app.listen(PORT, () => {
