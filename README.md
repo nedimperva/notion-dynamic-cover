@@ -1,14 +1,12 @@
 # Notion Dynamic Cover
 
-A dynamic cover image generator for Notion that displays random quotes from your Notion database along with current weather data from yr.no.
+A dynamic cover image generator for Notion that displays random quotes from your Notion database.
 
 ## Features
 
 - Pulls quotes from your Notion "quotes" database
-- Displays quote, author, and category
-- Shows current weather forecast from yr.no
-- Automatically refreshes data when the page is reloaded
-- Supports location-based weather data through URL parameters
+- Displays quote and author
+- Automatically refreshes quote when the page is reloaded
 
 ## Setup
 
@@ -16,7 +14,7 @@ A dynamic cover image generator for Notion that displays random quotes from your
 
 - Node.js (v14 or higher)
 - A Notion integration with API access
-- A Notion database with quotes (containing Name, Author, and Category properties)
+- A Notion database with quotes (containing Name and Author properties)
 
 ### Installation
 
@@ -48,9 +46,8 @@ A dynamic cover image generator for Notion that displays random quotes from your
 ### Running the Application
 
 Start the server:
-```
+
 npm start
-```
 
 The dynamic cover will be available at `http://localhost:3000`
 
@@ -59,21 +56,13 @@ The dynamic cover will be available at `http://localhost:3000`
 1. Open your Notion page
 2. Change the cover image
 3. Select "Link" and enter one of the following URLs:
-   - **For image covers** (recommended for Notion):
-     - `http://localhost:3000/image` - Default location with image format
-     - `http://localhost:3000/image/City-CountryCode` - Location-based weather with image format
-       - Example: `http://localhost:3000/image/Konjic-ba` for Konjic, Bosnia
-   - **For HTML format** (for viewing in browser):
-     - `http://localhost:3000` - Default location in HTML format
-     - `http://localhost:3000/cover/City-CountryCode` - Location-based weather in HTML format
-4. The cover will update with a new quote and weather data whenever the page is refreshed
-
-> **Important**: When using as a Notion cover, always use the `/image` endpoints which return PNG images instead of HTML.
+   - `http://localhost:3000/image` - For image format (recommended for Notion)
+   - `http://localhost:3000` - For HTML format (for viewing in browser)
+4. The cover will update with a new quote whenever the page is refreshed
 
 ## Customization
 
 - Edit `public/notion-cover-template.html` to change the design
-- Default weather location can be modified in `index.js` by changing the default latitude and longitude values in the `getWeatherData()` function
 
 ## License
 

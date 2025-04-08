@@ -44,12 +44,6 @@ app.get('/', async (req, res) => {
       quoteData = getFallbackQuote();
     }
     
-    // Get coordinates for Konjic, Bosnia (default location)
-    const coordinates = await getCoordinates('Konjic-ba');
-    
-    // Get weather data for Konjic, Bosnia
-    const weatherData = await getWeatherData(coordinates.lat, coordinates.lon);
-    
     // Combine data and render the page
     const data = {
       quote: quoteData.quote,
@@ -59,9 +53,7 @@ app.get('/', async (req, res) => {
         month: 'long', 
         day: 'numeric', 
         year: 'numeric' 
-      }),
-      weather: weatherData,
-      location: coordinates.displayName
+      })
     };
     
     if (format === 'image') {
@@ -97,12 +89,6 @@ app.get('/image', async (req, res) => {
       quoteData = getFallbackQuote();
     }
     
-    // Get coordinates for Konjic, Bosnia (default location)
-    const coordinates = await getCoordinates('Konjic-ba');
-    
-    // Get weather data for Konjic, Bosnia
-    const weatherData = await getWeatherData(coordinates.lat, coordinates.lon);
-    
     // Combine data and render the page
     const data = {
       quote: quoteData.quote,
@@ -112,9 +98,7 @@ app.get('/image', async (req, res) => {
         month: 'long', 
         day: 'numeric', 
         year: 'numeric' 
-      }),
-      weather: weatherData,
-      location: coordinates.displayName
+      })
     };
     
     // Return as image
@@ -124,106 +108,6 @@ app.get('/image', async (req, res) => {
   } catch (error) {
     console.error('Error:', error);
     res.status(500).send('An error occurred');
-  }
-});
-
-// Location-based route for the Notion cover
-app.get('/cover/:location', async (req, res) => {
-  try {
-    const locationParam = req.params.location;
-    const format = req.query.format || 'html';
-    
-    // Get quote data from Notion with fallback
-    let quoteData;
-    try {
-      quoteData = await getRandomQuote();
-    } catch (error) {
-      console.error('Error fetching from Notion, using fallback quote:', error);
-      quoteData = getFallbackQuote();
-    }
-    
-    // Get coordinates for the location
-    const coordinates = await getCoordinates(locationParam);
-    
-    // Get weather data from yr.no for the specific location
-    const weatherData = await getWeatherData(coordinates.lat, coordinates.lon);
-    
-    // Combine data and render the page
-    const data = {
-      quote: quoteData.quote,
-      author: quoteData.author,
-      category: quoteData.category,
-      date: new Date().toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
-      }),
-      weather: weatherData,
-      location: coordinates.displayName
-    };
-    
-    if (format === 'image') {
-      // Return as image
-      const imageBuffer = await renderAsImage(data);
-      res.contentType('image/png');
-      res.send(imageBuffer);
-    } else {
-      // Read the template file
-      const template = fs.readFileSync(path.join(__dirname, 'public', 'notion-cover-template.html'), 'utf8');
-      
-      // Replace placeholders with actual data
-      const html = renderTemplate(template, data);
-      
-      // Return as HTML
-      res.send(html);
-    }
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('An error occurred: ' + error.message);
-  }
-});
-
-// Location-based image route for the Notion cover
-app.get('/image/:location', async (req, res) => {
-  try {
-    const locationParam = req.params.location;
-    
-    // Get quote data from Notion with fallback
-    let quoteData;
-    try {
-      quoteData = await getRandomQuote();
-    } catch (error) {
-      console.error('Error fetching from Notion, using fallback quote:', error);
-      quoteData = getFallbackQuote();
-    }
-    
-    // Get coordinates for the location
-    const coordinates = await getCoordinates(locationParam);
-    
-    // Get weather data from yr.no for the specific location
-    const weatherData = await getWeatherData(coordinates.lat, coordinates.lon);
-    
-    // Combine data and render the page
-    const data = {
-      quote: quoteData.quote,
-      author: quoteData.author,
-      category: quoteData.category,
-      date: new Date().toLocaleDateString('en-US', { 
-        month: 'long', 
-        day: 'numeric', 
-        year: 'numeric' 
-      }),
-      weather: weatherData,
-      location: coordinates.displayName
-    };
-    
-    // Return as image
-    const imageBuffer = await renderAsImage(data);
-    res.contentType('image/png');
-    res.send(imageBuffer);
-  } catch (error) {
-    console.error('Error:', error);
-    res.status(500).send('An error occurred: ' + error.message);
   }
 });
 
@@ -240,13 +124,15 @@ async function renderAsImage(data) {
   console.log('Rendering new image...');
   
   try {
-    // Create canvas with Notion cover dimensions
+    // Set dimensions
     const width = 1500;
     const height = 600;
+    
+    // Create canvas
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
     
-    // Draw background gradient - match the original HTML design
+    // Draw background gradient
     const gradient = ctx.createLinearGradient(0, 0, width, height);
     gradient.addColorStop(0, '#f5f7fa');
     gradient.addColorStop(1, '#e4e9f2');
@@ -257,104 +143,32 @@ async function renderAsImage(data) {
     ctx.font = '14px Arial, sans-serif';
     ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
     ctx.textAlign = 'right';
-    ctx.fillText(data.date, width - 30, 30);
+    ctx.fillText(data.date, width - 20, 20);
     
-    // Draw quote section (left side)
-    const quoteSection = {
-      x: 0,
-      y: 0,
-      width: width * 0.6,
-      height: height
-    };
-    
-    // Center quote in the quote section
+    // Draw quote section
     ctx.textAlign = 'left';
-    
-    // Draw quote
-    const quoteX = quoteSection.x + 60;
-    const quoteMaxWidth = quoteSection.width - 120;
+    const quoteFontSize = 28;
+    const quoteX = width * 0.1;
+    const quoteMaxWidth = width * 0.8;
     
     // Wrap quote text
-    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, 28);
-    let quoteY = height / 2 - (quoteLines.length * 36) / 2;
+    const quoteLines = wrapText(ctx, `"${data.quote}"`, quoteMaxWidth, quoteFontSize);
     
-    ctx.font = '300 28px Arial, sans-serif';
+    // Calculate vertical position to center the quote
+    let quoteY = height / 2 - ((quoteLines.length * (quoteFontSize * 1.3)) / 2);
+    
+    ctx.font = `300 ${quoteFontSize}px Arial, sans-serif`;
     ctx.fillStyle = '#333';
+    
     quoteLines.forEach(line => {
       ctx.fillText(line, quoteX, quoteY);
-      quoteY += 36;
+      quoteY += quoteFontSize * 1.3;
     });
     
     // Draw author
     ctx.font = 'italic 14px Arial, sans-serif';
     ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
-    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 20);
-    
-    // Draw weather section (right side)
-    const weatherSectionX = width * 0.6;
-    const weatherSectionWidth = width * 0.4;
-    const weatherSectionHeight = height;
-    
-    // Draw weather section background
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-    ctx.fillRect(weatherSectionX, 0, weatherSectionWidth, weatherSectionHeight);
-    
-    // Draw weather title and location
-    ctx.font = '500 16px Arial, sans-serif';
-    ctx.fillStyle = 'rgba(51, 51, 51, 0.8)';
-    ctx.textAlign = 'left';
-    ctx.fillText("Today's Weather", weatherSectionX + 30, 50);
-    
-    // Draw location if available
-    if (data.location) {
-      ctx.font = 'italic 14px Arial, sans-serif';
-      ctx.fillStyle = 'rgba(51, 51, 51, 0.7)';
-      ctx.textAlign = 'right';
-      ctx.fillText(data.location, weatherSectionX + weatherSectionWidth - 30, 50);
-      ctx.textAlign = 'left';
-    }
-    
-    // Draw weather grid
-    const gridStartX = weatherSectionX + 30;
-    const gridStartY = 80;
-    const cellWidth = (weatherSectionWidth - 60) / 4;
-    const cellHeight = 80;
-    const cellPadding = 6;
-    
-    // Draw weather hours
-    for (let i = 0; i < Math.min(data.weather.length, 8); i++) {
-      const hour = data.weather[i];
-      const row = Math.floor(i / 4);
-      const col = i % 4;
-      const cellX = gridStartX + col * cellWidth;
-      const cellY = gridStartY + row * cellHeight;
-      
-      // Draw cell background with rounded corners
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
-      drawRoundedRect(
-        ctx,
-        cellX, 
-        cellY, 
-        cellWidth - cellPadding, 
-        cellHeight - cellPadding,
-        6 // border radius
-      );
-      
-      // Draw time
-      ctx.font = '12px Arial, sans-serif';
-      ctx.fillStyle = 'rgba(51, 51, 51, 0.6)';
-      ctx.textAlign = 'center';
-      ctx.fillText(hour.displayTime, cellX + (cellWidth - cellPadding) / 2, cellY + 20);
-      
-      // Draw weather icon (emoji)
-      ctx.font = '22px Arial';
-      ctx.fillText(hour.icon, cellX + (cellWidth - cellPadding) / 2, cellY + 45);
-      
-      // Draw temperature
-      ctx.font = '500 18px Arial, sans-serif';
-      ctx.fillStyle = '#333';
-      ctx.fillText(`${hour.temp}°`, cellX + (cellWidth - cellPadding) / 2, cellY + 70);
-    }
+    ctx.fillText(`— ${data.author}`, quoteX, quoteY + 10);
     
     // Convert canvas to buffer
     const buffer = canvas.toBuffer('image/png');
@@ -525,7 +339,7 @@ async function getRandomQuote() {
 }
 
 // Function to get weather data from yr.no
-async function getWeatherData(lat = 43.65, lon = 17.9667) {
+async function getWeatherData(lat = 43.65, lon = 17.9667) { // Default coordinates for Konjic, Bosnia
   try {
     // Get weather data from yr.no API
     const response = await axios.get('https://api.met.no/weatherapi/locationforecast/2.0/compact', {
@@ -563,11 +377,21 @@ async function getWeatherData(lat = 43.65, lon = 17.9667) {
                           closestForecast.data.next_6_hours?.summary?.symbol_code || 
                           'cloudy';
         
+        // Get precipitation if available
+        const precipitation = closestForecast.data.next_1_hours?.details?.precipitation_amount || 
+                             closestForecast.data.next_6_hours?.details?.precipitation_amount || 0;
+        
+        // Get wind speed if available
+        const windSpeed = Math.round(closestForecast.data.instant.details.wind_speed || 0);
+        
         weatherHours.push({
           time: itemDate.getHours() + ':00',
           displayTime: formatDisplayTime(itemDate.getHours()),
           temp: temperature,
-          icon: getWeatherEmoji(symbolCode)
+          icon: getWeatherEmoji(symbolCode),
+          symbolCode: symbolCode,
+          precipitation: precipitation,
+          windSpeed: windSpeed
         });
       }
     }
@@ -588,7 +412,10 @@ async function getWeatherData(lat = 43.65, lon = 17.9667) {
         time: forecastHour + ':00',
         displayTime: formatDisplayTime(forecastHour),
         temp: '--',
-        icon: '❓'
+        icon: '❓',
+        symbolCode: 'unknown',
+        precipitation: 0,
+        windSpeed: 0
       });
     }
     
@@ -603,8 +430,9 @@ function formatDisplayTime(hour) {
   return hour < 12 ? `${hour} AM` : `${hour - 12} PM`;
 }
 
-// Map weather codes to emojis
+// Map weather codes to colorful emoji icons
 function getWeatherEmoji(symbolCode) {
+  // More colorful and descriptive weather icons
   const weatherMap = {
     'clearsky': '☀️',
     'fair': '🌤️',
@@ -615,20 +443,28 @@ function getWeatherEmoji(symbolCode) {
     'sleetshowers': '🌨️',
     'snowshowers': '❄️',
     'rain': '🌧️',
-    'heavyrain': '🌧️',
-    'heavyrainandthunder': '⛈️',
+    'heavyrain': '💦',
+    'heavyrainandthunder': '⚡',
     'sleet': '🌨️',
     'snow': '❄️',
-    'snowandthunder': '⛈️',
+    'snowandthunder': '❄️⚡',
     'fog': '🌫️',
-    'sleetshowersandthunder': '⛈️',
-    'snowshowersandthunder': '⛈️',
-    'rainandthunder': '⛈️',
-    'sleetandthunder': '⛈️'
+    'sleetshowersandthunder': '🌨️⚡',
+    'snowshowersandthunder': '❄️⚡',
+    'rainandthunder': '🌧️⚡',
+    'sleetandthunder': '🌨️⚡'
   };
   
   // Handle day/night variations
   const baseCode = symbolCode.split('_')[0];
+  const isDay = symbolCode.includes('_day');
+  const isNight = symbolCode.includes('_night');
+  
+  // Add time-specific icons for day/night
+  if (isNight) {
+    if (baseCode === 'clearsky') return '🌙';
+    if (baseCode === 'fair') return '🌙';
+  }
   
   return weatherMap[baseCode] || '🌈';
 }
@@ -706,6 +542,10 @@ app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
   console.log(`For location-based weather, use: http://localhost:${PORT}/cover/City-CountryCode`);
   console.log(`Example: http://localhost:${PORT}/cover/Konjic-ba for Konjic, Bosnia`);
-  console.log(`For image format (for Notion cover), use: http://localhost:${PORT}/image`);
-  console.log(`For location-based image, use: http://localhost:${PORT}/image/City-CountryCode`);
+  console.log(`For image format (for Notion cover), use:`);
+  console.log(`  Desktop: http://localhost:${PORT}/image/desktop`);
+  console.log(`  Tablet: http://localhost:${PORT}/image/tablet`);
+  console.log(`  Mobile: http://localhost:${PORT}/image/mobile`);
+  console.log(`For location-based image, use: http://localhost:${PORT}/image/City-CountryCode/DeviceType`);
+  console.log(`Example: http://localhost:${PORT}/image/Konjic-ba/mobile for Konjic, Bosnia on mobile`);
 });

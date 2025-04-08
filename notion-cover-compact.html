@@ -15,6 +15,8 @@
       color: #333;
       overflow: hidden;
       display: flex;
+      justify-content: center;
+      align-items: center;
     }
     
     .date {
@@ -25,17 +27,10 @@
       opacity: 0.7;
     }
     
-    .quote-section {
-      width: 60%;
-      padding: 30px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-sizing: border-box;
-    }
-    
     .quote-container {
-      max-width: 700px;
+      max-width: 1000px;
+      padding: 30px;
+      text-align: center;
     }
     
     .quote {
@@ -51,110 +46,14 @@
       opacity: 0.7;
       font-style: italic;
     }
-    
-    .weather-section {
-      width: 40%;
-      padding: 30px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      box-sizing: border-box;
-      background: rgba(255, 255, 255, 0.4);
-    }
-    
-    .weather-title {
-      font-size: 16px;
-      font-weight: 500;
-      margin-bottom: 15px;
-      opacity: 0.8;
-    }
-    
-    .weather-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-gap: 12px;
-    }
-    
-    .weather-hour {
-      text-align: center;
-      padding: 10px 5px;
-      border-radius: 6px;
-      background: rgba(255, 255, 255, 0.4);
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
-    }
-    
-    .time {
-      font-size: 12px;
-      margin-bottom: 5px;
-      opacity: 0.6;
-    }
-    
-    .temp {
-      font-size: 18px;
-      font-weight: 500;
-      margin: 3px 0;
-    }
-    
-    .icon {
-      font-size: 22px;
-      margin: 3px 0;
-    }
   </style>
 </head>
 <body>
-  <div class="date">April 1, 2025</div>
+  <div class="date">{{date}}</div>
   
-  <div class="quote-section">
-    <div class="quote-container">
-      <p class="quote">"We must be willing to let go of the life we planned so as to have the life that is waiting for us."</p>
-      <p class="author">— Joseph Campbell</p>
-    </div>
-  </div>
-  
-  <div class="weather-section">
-    <div class="weather-title">Today's Weather</div>
-    <div class="weather-grid">
-      <div class="weather-hour">
-        <div class="time">6 AM</div>
-        <div class="icon">🌥️</div>
-        <div class="temp">48°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">9 AM</div>
-        <div class="icon">⛅</div>
-        <div class="temp">53°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">12 PM</div>
-        <div class="icon">☀️</div>
-        <div class="temp">59°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">3 PM</div>
-        <div class="icon">☀️</div>
-        <div class="temp">63°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">6 PM</div>
-        <div class="icon">🌤️</div>
-        <div class="temp">58°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">9 PM</div>
-        <div class="icon">🌙</div>
-        <div class="temp">51°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">12 AM</div>
-        <div class="icon">🌙</div>
-        <div class="temp">47°</div>
-      </div>
-      <div class="weather-hour">
-        <div class="time">3 AM</div>
-        <div class="icon">🌙</div>
-        <div class="temp">45°</div>
-      </div>
-    </div>
+  <div class="quote-container">
+    <p class="quote">"{{quote}}"</p>
+    <p class="author">— {{author}}</p>
   </div>
 </body>
 </html>
